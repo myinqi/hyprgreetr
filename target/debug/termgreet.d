@@ -1,1 +1,0 @@
-/home/khrom/Coding/hyprgreetr/target/debug/termgreet: /home/khrom/Coding/hyprgreetr/src/config.rs /home/khrom/Coding/hyprgreetr/src/display.rs /home/khrom/Coding/hyprgreetr/src/kitty_graphics.rs /home/khrom/Coding/hyprgreetr/src/main.rs /home/khrom/Coding/hyprgreetr/src/system_info.rs
