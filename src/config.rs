@@ -380,9 +380,49 @@ impl Config {
 
     pub fn load(path: &Path) -> Result<Self> {
         if !path.exists() {
-            // Create default config if it doesn't exist
-            let config = Self::default();
-            config.save(path)?;
+            // Try to copy config from examples directory first
+            let mut config_copied = false;
+            
+            // Try to find the examples directory relative to the executable
+            let exe_path = std::env::current_exe()
+                .with_context(|| "Failed to get executable path")?;
+            let exe_dir = exe_path.parent()
+                .with_context(|| "Failed to get executable directory")?;
+            
+            // Look for examples directory in common locations
+            let possible_examples_dirs = [
+                exe_dir.join("../../../examples"), // Development (target/debug/)
+                exe_dir.join("../../examples"),    // Development (target/release/)
+                exe_dir.join("../examples"),       // Installed relative
+                exe_dir.join("examples"),          // Same directory
+                std::env::current_dir().unwrap_or_default().join("examples"), // Current working directory
+            ];
+            
+            for examples_dir in &possible_examples_dirs {
+                let example_config = examples_dir.join("config.toml");
+                if example_config.exists() {
+                    // Copy the example config to the target location
+                    if let Some(parent) = path.parent() {
+                        fs::create_dir_all(parent)
+                            .with_context(|| format!("Failed to create config directory: {}", parent.display()))?;
+                    }
+                    
+                    fs::copy(&example_config, path)
+                        .with_context(|| format!("Failed to copy example config from {} to {}", 
+                                                example_config.display(), path.display()))?;
+                    
+                    println!("Copied example configuration from {}", example_config.display());
+                    config_copied = true;
+                    break;
+                }
+            }
+            
+            // If we couldn't find examples, fall back to default config
+            if !config_copied {
+                let config = Self::default();
+                config.save(path)?;
+                println!("Created default configuration (examples not found)");
+            }
             
             // Setup default assets (pngs directory and logo)
             if let Some(config_dir) = path.parent() {
@@ -390,6 +430,13 @@ impl Config {
                     eprintln!("Warning: Failed to setup default assets: {}", e);
                 }
             }
+            
+            // Load the config we just created/copied
+            let content = fs::read_to_string(path)
+                .with_context(|| format!("Failed to read config file: {}", path.display()))?;
+            
+            let config: Config = toml::from_str(&content)
+                .with_context(|| format!("Failed to parse config file: {}", path.display()))?;
             
             return Ok(config);
         }
@@ -422,8 +469,52 @@ impl Config {
 impl MotdConfig {
     pub fn load(path: &Path) -> Result<Self> {
         if !path.exists() {
-            let config = Self::default();
-            config.save(path)?;
+            // Try to copy motd config from examples directory first
+            let mut motd_copied = false;
+            
+            // Try to find the examples directory relative to the executable
+            if let Ok(exe_path) = std::env::current_exe() {
+                if let Some(exe_dir) = exe_path.parent() {
+                    // Look for examples directory in common locations
+                    let possible_examples_dirs = [
+                        exe_dir.join("../../../examples"), // Development (target/debug/)
+                        exe_dir.join("../../examples"),    // Development (target/release/)
+                        exe_dir.join("../examples"),       // Installed relative
+                        exe_dir.join("examples"),          // Same directory
+                        std::env::current_dir().unwrap_or_default().join("examples"), // Current working directory
+                    ];
+                    
+                    for examples_dir in &possible_examples_dirs {
+                        let example_motd = examples_dir.join("motd.toml");
+                        if example_motd.exists() {
+                            // Copy the example motd to the target location
+                            if let Some(parent) = path.parent() {
+                                let _ = fs::create_dir_all(parent);
+                            }
+                            
+                            if fs::copy(&example_motd, path).is_ok() {
+                                println!("Copied example MOTD configuration from {}", example_motd.display());
+                                motd_copied = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // If we couldn't find examples, fall back to default config
+            if !motd_copied {
+                let config = Self::default();
+                config.save(path)?;
+            }
+            
+            // Load the config we just created/copied
+            let content = fs::read_to_string(path)
+                .with_context(|| format!("Failed to read MOTD config file: {}", path.display()))?;
+            
+            let config: MotdConfig = toml::from_str(&content)
+                .with_context(|| format!("Failed to parse MOTD config file: {}", path.display()))?;
+            
             return Ok(config);
         }
 

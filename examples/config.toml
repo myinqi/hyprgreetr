@@ -1,5 +1,5 @@
-show_motd = false
-motd_file = "/home/khrom/.config/termgreet/motd.toml"
+show_motd = true
+motd_file = "~/.config/hyprgreetr/motd.toml"
 
 [general]
 show_title = false
@@ -22,7 +22,7 @@ separator = "#cba6f7" # Color for the separator between module and value
 
 [display]
 show_image = true
-image_path = "/home/khrom/.config/termgreet/pngs/CachyHypr.png"
+image_path = "~/.config/hyprgreetr/pngs/cachyos_logo4.png"
 prefer_kitty_graphics = true    # to see the rendered image, you need a terminal with "terminal graphics protocol" support like kitty, ghostty, iTerm2 etc.
 padding = 1
 show_border = false
