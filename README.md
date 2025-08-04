@@ -1,13 +1,16 @@
-# TermGreet
+# HyprGreet
 
-A modern, configurable system information tool written in Rust, similar to neofetch/fastfetch, with support for PNG images and MOTD (Message of the Day).
+A modern, configurable system information tool written in Rust, similar to neofetch/fastfetch, with support for PNG images and MOTD (Message of the Day). Originally forked from termgreet and enhanced with btrfs-aware disk reporting and automatic asset management.
 
 ## Features
 
 - **Comprehensive System Info**: CPU, GPU, Memory, OS, Window Manager, Shell, Terminal, and more
 - **Modern Image Support**: PNG images with Kitty Graphics Protocol for pixel-perfect rendering
-- **TOML Configuration**: Fully configurable via `~/.config/termgreet/config.toml`
+- **TOML Configuration**: Fully configurable via `~/.config/hyprgreetr/config.toml`
+- **Automatic Asset Management**: PNG files from assets directory are automatically copied to config on first run
+- **Tilde Path Expansion**: Support for `~` in config paths (e.g., `~/config/hyprgreetr/pngs/logo.png`)
 - **MOTD Support**: Display configurable welcome messages
+- **Enhanced Disk Reporting**: btrfs-aware disk usage with consolidated subvolume display
 - **Clean Layout**: Fastfetch-style output with customizable colors and borders
 - **Modular Design**: Enable/disable individual modules as needed
 - **Version Display**: Optional version information for Shell, Terminal, DE, and WM
@@ -21,7 +24,7 @@ A modern, configurable system information tool written in Rust, similar to neofe
 
 ### Prerequisites
 
-TermGreet requires Rust to be installed on your system. If you don't have Rust installed:
+HyprGreet requires Rust to be installed on your system. If you don't have Rust installed:
 
 ```bash
 # Install Rust via rustup (recommended)
@@ -39,8 +42,8 @@ Alternatively, install Rust through your system package manager:
 
 ```bash
 # Clone the repository
-git clone https://github.com/myinqi/termgreet.git
-cd termgreet
+git clone https://github.com/myinqi/hyprgreetr.git
+cd hyprgreetr
 
 # Build and install
 cargo build --release
@@ -51,31 +54,31 @@ cargo install --path .
 
 ```bash
 # Basic usage
-termgreet
+hyprgreetr
 
 # Use custom configuration file
-termgreet --config /path/to/config.toml
+hyprgreetr --config /path/to/config.toml
 
 # Show only MOTD
-termgreet --motd
+hyprgreetr --motd
 
 # Disable images
-termgreet --no-image
+hyprgreetr --no-image
 
 # Show help
-termgreet --help
+hyprgreetr --help
 ```
 
 ## Autostart on Terminal Launch
 
-To automatically run TermGreet when opening a new terminal (similar to fastfetch), add one of these options to your shell configuration:
+To automatically run HyprGreet when opening a new terminal (similar to fastfetch), add one of these options to your shell configuration:
 
 ### Basic Autostart
 
 ```bash
 # Add to ~/.zshrc (for zsh) or ~/.bashrc (for bash)
 if [[ -o interactive ]]; then
-    termgreet
+    hyprgreetr
 fi
 ```
 
@@ -84,7 +87,7 @@ fi
 ```bash
 # Add to ~/.zshrc (for zsh) or ~/.bashrc (for bash)
 if [[ -o interactive ]]; then
-    termgreet --config ~/.config/termgreet/config.toml
+    hyprgreetr --config ~/.config/hyprgreetr/config.toml
 fi
 ```
 
@@ -92,9 +95,27 @@ After adding this to your shell configuration, restart your terminal or run `sou
 
 ## Configuration
 
-TermGreet automatically creates a default configuration file at `~/.config/termgreet/config.toml` on first run.
+HyprGreet automatically creates a default configuration file at `~/.config/hyprgreetr/config.toml` on first run.
 
-### Main Configuration (`~/.config/termgreet/config.toml`)
+### Automatic Asset Management
+
+On first run, HyprGreet automatically:
+- Creates the `~/.config/hyprgreetr/pngs/` directory
+- Copies all PNG files from the assets directory to your config directory
+- This includes logos for various distributions (Arch, CachyOS, openSUSE Tumbleweed, Hyprland, etc.)
+
+### Tilde Path Expansion
+
+HyprGreet supports tilde (`~`) expansion in configuration paths:
+```toml
+# Both formats work:
+image_path = "/home/username/.config/hyprgreetr/pngs/logo.png"  # Absolute path
+image_path = "~/.config/hyprgreetr/pngs/logo.png"              # Tilde path (recommended)
+
+motd_file = "~/.config/hyprgreetr/motd.toml"                   # Also works for MOTD
+```
+
+### Main Configuration (`~/.config/hyprgreetr/config.toml`)
 
 ```toml
 [general]
@@ -346,10 +367,19 @@ Contributions are welcome! Please:
 
 ## Acknowledgments
 
-TermGreet was inspired by and builds upon the excellent work of several projects:
+HyprGreet was inspired by and builds upon the excellent work of several projects:
 
+- **[TermGreet](https://github.com/myinqi/termgreet)** - The original project that this fork is based on
 - **[Neofetch](https://github.com/dylanaraps/neofetch)** and **[Fastfetch](https://github.com/fastfetch-cli/fastfetch)** for pioneering the system information display concept and providing the foundation for modern fetch tools
 - **[dysk](https://github.com/Canop/dysk)** by [Canop](https://github.com/Canop) for the inspiration behind our enhanced disk usage display module
+
+### Enhanced Features in HyprGreet
+
+This fork adds several enhancements over the original TermGreet:
+- **btrfs-aware disk reporting** - Consolidates btrfs subvolumes for cleaner output
+- **Automatic asset management** - PNG files are automatically copied to config directory on first run
+- **Tilde path expansion** - Support for `~` in configuration file paths
+- **Enhanced error handling** - Better handling of missing assets and configuration files
 
 We're grateful to these projects and their maintainers for their contributions to the open source community.
 
