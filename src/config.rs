@@ -3,6 +3,22 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// Expands tilde (~) in paths to the user's home directory
+pub fn expand_tilde(path: &Path) -> PathBuf {
+    if let Some(path_str) = path.to_str() {
+        if path_str.starts_with("~/") {
+            if let Some(home_dir) = dirs::home_dir() {
+                return home_dir.join(&path_str[2..]);
+            }
+        } else if path_str == "~" {
+            if let Some(home_dir) = dirs::home_dir() {
+                return home_dir;
+            }
+        }
+    }
+    path.to_path_buf()
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     pub general: GeneralConfig,
@@ -299,39 +315,64 @@ impl Config {
                 .with_context(|| format!("Failed to create pngs directory: {}", pngs_dir.display()))?;
         }
         
-        // Copy default logo if it doesn't exist
-        let default_logo_path = pngs_dir.join("hyprland_logo.png");
-        if !default_logo_path.exists() {
-            // Try to find the assets directory relative to the executable
-            let exe_path = std::env::current_exe()
-                .with_context(|| "Failed to get executable path")?;
-            let exe_dir = exe_path.parent()
-                .with_context(|| "Failed to get executable directory")?;
-            
-            // Look for assets in common locations
-            let possible_asset_paths = [
-                exe_dir.join("../../../assets/hyprland_logo.png"), // Development (target/debug/)
-                exe_dir.join("../../assets/hyprland_logo.png"),    // Development (target/release/)
-                exe_dir.join("../assets/hyprland_logo.png"),       // Installed relative
-                exe_dir.join("assets/hyprland_logo.png"),          // Same directory
-                std::env::current_dir().unwrap_or_default().join("assets/hyprland_logo.png"), // Current working directory
-            ];
-            
-            let mut logo_copied = false;
-            for asset_path in &possible_asset_paths {
-                if asset_path.exists() {
-                    fs::copy(asset_path, &default_logo_path)
-                        .with_context(|| format!("Failed to copy logo from {} to {}", 
-                                                asset_path.display(), default_logo_path.display()))?;
-                    logo_copied = true;
-                    break;
+        // Try to find the assets directory relative to the executable
+        let exe_path = std::env::current_exe()
+            .with_context(|| "Failed to get executable path")?;
+        let exe_dir = exe_path.parent()
+            .with_context(|| "Failed to get executable directory")?;
+        
+        // Look for assets directory in common locations
+        let possible_assets_dirs = [
+            exe_dir.join("../../../assets"), // Development (target/debug/)
+            exe_dir.join("../../assets"),    // Development (target/release/)
+            exe_dir.join("../assets"),       // Installed relative
+            exe_dir.join("assets"),          // Same directory
+            std::env::current_dir().unwrap_or_default().join("assets"), // Current working directory
+        ];
+        
+        let mut assets_found = false;
+        for assets_dir in &possible_assets_dirs {
+            if assets_dir.exists() && assets_dir.is_dir() {
+                // Copy all PNG files from assets directory to pngs directory
+                let entries = fs::read_dir(assets_dir)
+                    .with_context(|| format!("Failed to read assets directory: {}", assets_dir.display()))?;
+                
+                let mut png_count = 0;
+                for entry in entries {
+                    let entry = entry.with_context(|| "Failed to read directory entry")?;
+                    let path = entry.path();
+                    
+                    // Check if it's a PNG file
+                    if path.is_file() {
+                        if let Some(extension) = path.extension() {
+                            if extension.to_string_lossy().to_lowercase() == "png" {
+                                if let Some(filename) = path.file_name() {
+                                    let dest_path = pngs_dir.join(filename);
+                                    
+                                    // Only copy if the file doesn't already exist
+                                    if !dest_path.exists() {
+                                        fs::copy(&path, &dest_path)
+                                            .with_context(|| format!("Failed to copy {} to {}", 
+                                                                    path.display(), dest_path.display()))?;
+                                        png_count += 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+                
+                if png_count > 0 {
+                    println!("Copied {} PNG files from assets to config directory", png_count);
+                }
+                
+                assets_found = true;
+                break;
             }
-            
-            if !logo_copied {
-                // If we can't find the asset, create a placeholder file or just warn
-                eprintln!("Warning: Could not find hyprland_logo.png in assets directory. Please manually copy it to {}", default_logo_path.display());
-            }
+        }
+        
+        if !assets_found {
+            eprintln!("Warning: Could not find assets directory. PNG files will not be copied to config directory.");
         }
         
         Ok(())

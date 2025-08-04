@@ -2,7 +2,7 @@ use anyhow::Result;
 use colored::{Colorize, ColoredString};
 use image;
 use unicode_width::UnicodeWidthStr;
-use crate::config::{Config, MotdConfig};
+use crate::config::{Config, MotdConfig, expand_tilde};
 use crate::system_info::SystemInfo;
 use crate::kitty_graphics::KittyGraphics;
 
@@ -39,8 +39,9 @@ impl Display {
             
             // First, check if a specific image path is configured
             if let Some(ref image_path) = self.config.display.image_path {
-                if image_path.exists() {
-                    image_to_use = Some(image_path.clone());
+                let expanded_path = expand_tilde(image_path);
+                if expanded_path.exists() {
+                    image_to_use = Some(expanded_path);
                 }
             }
             
@@ -178,7 +179,8 @@ impl Display {
             return Ok(());
         }
 
-        match MotdConfig::load(&self.config.motd_file) {
+        let expanded_motd_path = expand_tilde(&self.config.motd_file);
+        match MotdConfig::load(&expanded_motd_path) {
             Ok(motd_config) => {
                 if motd_config.enabled && !motd_config.messages.is_empty() {
                     Self::show_motd(&motd_config);

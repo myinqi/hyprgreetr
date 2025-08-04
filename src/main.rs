@@ -7,7 +7,7 @@ mod system_info;
 mod display;
 mod kitty_graphics;
 
-use config::{Config, MotdConfig};
+use config::{Config, MotdConfig, expand_tilde};
 use system_info::SystemInfo;
 use display::Display;
 
@@ -41,7 +41,8 @@ fn main() -> Result<()> {
     let config = Config::load(&config_path)?;
     
     if cli.motd {
-        let motd_config = MotdConfig::load(&config.motd_file)?;
+        let expanded_motd_path = expand_tilde(&config.motd_file);
+        let motd_config = MotdConfig::load(&expanded_motd_path)?;
         Display::show_motd(&motd_config);
         return Ok(());
     }
