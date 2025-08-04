@@ -1,4 +1,4 @@
-# HyprGreet
+# HyprGreetr
 
 A modern, configurable system information tool written in Rust, similar to neofetch/fastfetch, with support for PNG images and MOTD (Message of the Day). Originally forked from termgreet and enhanced with btrfs-aware disk reporting and automatic asset management.
 
@@ -244,7 +244,24 @@ messages = [
 - **network**: Network interface information
 - **public_ip**: Public IP address
 
-## 🎨 Available Colors
+## 🎨 Color Configuration
+
+HyprGreetr supports flexible color configuration with multiple formats:
+
+### Hex Colors (Recommended)
+```toml
+[general.colors]
+title = "#00FFFF"     # Cyan title
+module = "#89dceb"    # Light blue for module names
+info = "#cdd6f4"      # Light gray for information
+separator = "#cba6f7" # Purple for separators
+```
+
+**Supported Hex Formats:**
+- 6-digit: `#RRGGBB` (e.g., `#FF0000` for red)
+- 3-digit: `#RGB` (e.g., `#F00` for red, automatically expanded to `#FF0000`)
+
+### Named Colors (Legacy Support)
 
 **Standard Colors:**
 - `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`
@@ -252,9 +269,15 @@ messages = [
 **Bright Colors:**
 - `bright_black`, `bright_red`, `bright_green`, `bright_yellow`, `bright_blue`, `bright_magenta`, `bright_cyan`, `bright_white`
 
+### Color Usage
+- **title**: Color for the main title (e.g., "System Information")
+- **module**: Color for module names (e.g., "OS", "Kernel", "CPU")
+- **info**: Color for the information values
+- **separator**: Color for the separator between module and value
+
 ## Image Rendering
 
-TermGreet supports multiple image rendering methods:
+HyprGreetr supports multiple image rendering methods:
 
 **Kitty Graphics Protocol**
 - Pixel-perfect rendering in Kitty, Ghostty, iTerm2, WezTerm
