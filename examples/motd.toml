@@ -1,0 +1,13 @@
+enabled = true
+random = true
+color = "#00FFFF"  # cyan
+
+messages = [
+    "Welcome to Hyprland!",
+    "Tiled. Focused. Fast.",
+    "Mouse is optional. Precision is not.",
+    "CachyOS: Arch, but faster.",
+    "If you see the desktop, something went wrong.",
+    "Hyprland: Where every pixel has a purpose.",
+    "Keybinds over clicks. Always."
+]
