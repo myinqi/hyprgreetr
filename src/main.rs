@@ -12,7 +12,7 @@ use system_info::SystemInfo;
 use display::Display;
 
 #[derive(Parser)]
-#[command(name = "termgreet")]
+#[command(name = "hyprgreetr")]
 #[command(about = "A configurable system information tool")]
 struct Cli {
     /// Path to config file
@@ -34,7 +34,7 @@ fn main() -> Result<()> {
     let config_path = cli.config.unwrap_or_else(|| {
         dirs::config_dir()
             .unwrap_or_else(|| PathBuf::from(".config"))
-            .join("termgreet")
+            .join("hyprgreetr")
             .join("config.toml")
     });
     

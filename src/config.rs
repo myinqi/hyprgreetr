@@ -269,7 +269,7 @@ impl Default for Config {
             show_motd: true,
             motd_file: dirs::config_dir()
                 .unwrap_or_else(|| PathBuf::from(".config"))
-                .join("termgreet")
+                .join("hyprgreetr")
                 .join("motd.toml"),
         }
     }
@@ -300,7 +300,7 @@ impl Config {
         }
         
         // Copy default logo if it doesn't exist
-        let default_logo_path = pngs_dir.join("termgreet_logo.png");
+        let default_logo_path = pngs_dir.join("hyprland_logo.png");
         if !default_logo_path.exists() {
             // Try to find the assets directory relative to the executable
             let exe_path = std::env::current_exe()
@@ -310,11 +310,11 @@ impl Config {
             
             // Look for assets in common locations
             let possible_asset_paths = [
-                exe_dir.join("../../../assets/termgreet_logo.png"), // Development (target/debug/)
-                exe_dir.join("../../assets/termgreet_logo.png"),    // Development (target/release/)
-                exe_dir.join("../assets/termgreet_logo.png"),       // Installed relative
-                exe_dir.join("assets/termgreet_logo.png"),          // Same directory
-                std::env::current_dir().unwrap_or_default().join("assets/termgreet_logo.png"), // Current working directory
+                exe_dir.join("../../../assets/hyprland_logo.png"), // Development (target/debug/)
+                exe_dir.join("../../assets/hyprland_logo.png"),    // Development (target/release/)
+                exe_dir.join("../assets/hyprland_logo.png"),       // Installed relative
+                exe_dir.join("assets/hyprland_logo.png"),          // Same directory
+                std::env::current_dir().unwrap_or_default().join("assets/hyprland_logo.png"), // Current working directory
             ];
             
             let mut logo_copied = false;
@@ -330,7 +330,7 @@ impl Config {
             
             if !logo_copied {
                 // If we can't find the asset, create a placeholder file or just warn
-                eprintln!("Warning: Could not find termgreet_logo.png in assets directory. Please manually copy it to {}", default_logo_path.display());
+                eprintln!("Warning: Could not find hyprland_logo.png in assets directory. Please manually copy it to {}", default_logo_path.display());
             }
         }
         

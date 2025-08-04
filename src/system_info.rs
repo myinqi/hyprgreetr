@@ -2168,6 +2168,7 @@ impl SystemInfo {
     fn get_dysk_info() -> String {
         // Get all mounted filesystems using df command
         let mut mount_info = Vec::new();
+        let mut btrfs_devices = std::collections::HashMap::<String, String>::new();
         
         // Use df to get all mounted filesystems with human-readable sizes
         if let Some(output) = Self::run_command_with_env("df", &["-hT"], &[("LC_ALL", "C")]) {
@@ -2184,6 +2185,20 @@ impl SystemInfo {
                     
                     // Skip pseudo filesystems and special mounts
                     if Self::should_include_in_dysk(device, filesystem, mount_point) {
+                        // Special handling for btrfs to avoid duplicate subvolumes
+                        if filesystem == "btrfs" {
+                            // Group btrfs subvolumes by device
+                            if let Some(existing) = btrfs_devices.get(device) {
+                                // If we already have this device, only add if it's a more important mount point
+                                if Self::is_more_important_btrfs_mount(mount_point, existing) {
+                                    btrfs_devices.insert(device.to_string(), mount_point.to_string());
+                                }
+                            } else {
+                                btrfs_devices.insert(device.to_string(), mount_point.to_string());
+                            }
+                            continue;
+                        }
+                        
                         // Parse usage percentage
                         let usage_num = usage_percent.trim_end_matches('%')
                             .parse::<u32>()
@@ -2210,6 +2225,13 @@ impl SystemInfo {
                         
                         mount_info.push(drive_info);
                     }
+                }
+            }
+            
+            // Now process the consolidated btrfs devices
+            for (device, mount_point) in btrfs_devices {
+                if let Some(usage_info) = Self::get_btrfs_usage_info(&device, &mount_point) {
+                    mount_info.push(usage_info);
                 }
             }
         }
@@ -2247,6 +2269,175 @@ impl SystemInfo {
         }
     }
     
+    fn is_more_important_btrfs_mount(new_mount: &str, existing_mount: &str) -> bool {
+        // Priority order for btrfs mount points (higher number = more important)
+        let get_priority = |mount: &str| -> i32 {
+            match mount {
+                "/" => 100,                    // Root is most important
+                "/home" => 90,                // Home is very important
+                "/boot" => 80,                // Boot is important
+                "/var" => 70,                 // Var is moderately important
+                "/usr" => 60,                 // Usr is moderately important
+                "/opt" => 50,                 // Opt is less important
+                _ if mount.starts_with("/var/") => 40,  // Var subdirs are less important
+                _ if mount.starts_with("/usr/") => 30,  // Usr subdirs are less important
+                _ => 10,                      // Everything else has low priority
+            }
+        };
+        
+        get_priority(new_mount) > get_priority(existing_mount)
+    }
+    
+    fn get_btrfs_usage_info(device: &str, mount_point: &str) -> Option<String> {
+        // Try to get btrfs-specific usage information
+        // First, try using btrfs filesystem usage command for more accurate info
+        if let Some(btrfs_output) = Self::run_command("btrfs", &["filesystem", "usage", "-b", mount_point]) {
+            if let Some(usage_info) = Self::parse_btrfs_usage(&btrfs_output, device, mount_point) {
+                return Some(usage_info);
+            }
+        }
+        
+        // Fallback to regular df command
+        if let Some(df_output) = Self::run_command_with_env("df", &["-hT", mount_point], &[("LC_ALL", "C")]) {
+            for line in df_output.lines().skip(1) {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() >= 7 {
+                    let filesystem = parts[1];
+                    let total = parts[2];
+                    let used = parts[3];
+                    let usage_percent = parts[5];
+                    
+                    let usage_num = usage_percent.trim_end_matches('%')
+                        .parse::<u32>()
+                        .unwrap_or(0);
+                    
+                    let progress_bar = Self::create_progress_bar(usage_num);
+                    let clean_device = device.strip_prefix("/dev/").unwrap_or(device);
+                    
+                    // For btrfs, show the mount point to indicate it's the consolidated view
+                    let display_mount = if mount_point == "/" {
+                        "/ (btrfs)".to_string()
+                    } else {
+                        format!("{} (btrfs main)", mount_point)
+                    };
+                    
+                    return Some(format!(
+                        "{} {:>3}% {} {:>4}/{:<4} [{}] {}",
+                        progress_bar,
+                        usage_num,
+                        clean_device,
+                        used,
+                        total,
+                        filesystem,
+                        display_mount
+                    ));
+                }
+            }
+        }
+        
+        None
+    }
+    
+    fn parse_btrfs_usage(output: &str, device: &str, mount_point: &str) -> Option<String> {
+        let mut device_size = None;
+        let mut used_size = None;
+        
+        for line in output.lines() {
+            let line = line.trim();
+            if line.starts_with("Device size:") {
+                // Extract the numeric value after "Device size:"
+                if let Some(size_part) = line.split(':').nth(1) {
+                    if let Ok(bytes) = size_part.trim().parse::<u64>() {
+                        device_size = Some(Self::bytes_to_human_readable(bytes));
+                    }
+                }
+            } else if line.starts_with("Used:") {
+                // Extract the numeric value after "Used:"
+                if let Some(size_part) = line.split(':').nth(1) {
+                    if let Ok(bytes) = size_part.trim().parse::<u64>() {
+                        used_size = Some(Self::bytes_to_human_readable(bytes));
+                    }
+                }
+            }
+        }
+        
+        if let (Some(total), Some(used)) = (device_size, used_size) {
+            // Calculate usage percentage
+            let total_bytes = Self::human_readable_to_bytes(&total).unwrap_or(0);
+            let used_bytes = Self::human_readable_to_bytes(&used).unwrap_or(0);
+            let usage_percent = if total_bytes > 0 {
+                ((used_bytes as f64 / total_bytes as f64) * 100.0) as u32
+            } else {
+                0
+            };
+            
+            let progress_bar = Self::create_progress_bar(usage_percent);
+            let clean_device = device.strip_prefix("/dev/").unwrap_or(device);
+            
+            let display_mount = if mount_point == "/" {
+                "/ (btrfs)".to_string()
+            } else {
+                format!("{} (btrfs main)", mount_point)
+            };
+            
+            return Some(format!(
+                "{} {:>3}% {} {:>4}/{:<4} [btrfs] {}",
+                progress_bar,
+                usage_percent,
+                clean_device,
+                used,
+                total,
+                display_mount
+            ));
+        }
+        
+        None
+    }
+    
+    fn bytes_to_human_readable(bytes: u64) -> String {
+        const UNITS: &[&str] = &["B", "K", "M", "G", "T", "P"];
+        let mut size = bytes as f64;
+        let mut unit_index = 0;
+        
+        while size >= 1024.0 && unit_index < UNITS.len() - 1 {
+            size /= 1024.0;
+            unit_index += 1;
+        }
+        
+        if unit_index == 0 {
+            format!("{:.0}{}", size, UNITS[unit_index])
+        } else {
+            format!("{:.1}{}", size, UNITS[unit_index])
+        }
+    }
+    
+    fn human_readable_to_bytes(human: &str) -> Option<u64> {
+        let human = human.trim();
+        if human.is_empty() {
+            return None;
+        }
+        
+        let (number_part, unit_part) = if let Some(pos) = human.find(|c: char| c.is_alphabetic()) {
+            (&human[..pos], &human[pos..])
+        } else {
+            (human, "")
+        };
+        
+        let number: f64 = number_part.parse().ok()?;
+        
+        let multiplier = match unit_part.to_uppercase().as_str() {
+            "" | "B" => 1,
+            "K" | "KB" => 1024,
+            "M" | "MB" => 1024 * 1024,
+            "G" | "GB" => 1024 * 1024 * 1024,
+            "T" | "TB" => 1024_u64.pow(4),
+            "P" | "PB" => 1024_u64.pow(5),
+            _ => return None,
+        };
+        
+        Some((number * multiplier as f64) as u64)
+    }
+
     fn should_include_in_dysk(device: &str, filesystem: &str, mount_point: &str) -> bool {
         // Skip pseudo filesystems
         let pseudo_fs = [

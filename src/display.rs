@@ -47,7 +47,7 @@ impl Display {
             // If no specific image or it doesn't exist, try default logo
             if image_to_use.is_none() {
                 if let Some(config_dir) = dirs::config_dir() {
-                    let default_logo = config_dir.join("termgreet").join("pngs").join("termgreet_logo.png");
+                    let default_logo = config_dir.join("hyprgreetr").join("pngs").join("hyprland_logo.png");
                     if default_logo.exists() {
                         image_to_use = Some(default_logo);
                     }
