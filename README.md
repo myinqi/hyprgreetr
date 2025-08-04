@@ -336,28 +336,9 @@ Reliable detection for various environments:
 
 ## Example Output
 
-```
-System Information
+![HyprGreetr Example Output](https://github.com/myinqi/hyprgreetr/blob/main/screenshots/example1.png)
 
-[PNG Image]              OS          <>      CachyOS Linux
-                         Kernel      <>      6.15.7-2-cachyos
-                         Uptime      <>      2 hours, 34 minutes
-                         Shell       <>      zsh 5.9
-                         Terminal    <>      ghostty 1.0.0
-                         Font        <>      JetBrainsMono Nerd Font (13pt)
-                         User        <>      khrom
-                         Hostname    <>      workstation
-                         DE          <>      KDE Plasma 6.0.2
-                         WM          <>      KWin
-                         Resolution  <>      3440x1440 @ 165Hz
-                         CPU         <>      AMD Ryzen 9 7950X (32 cores)
-                         GPU         <>      NVIDIA GeForce RTX 4070 SUPER
-                         GPU Driver  <>      NVIDIA (proprietary) 575.64.05
-                         Memory      <>      10.31 GiB / 62.42 GiB (17%)
-                         Disk        <>      256G / 1.0T (25%)
-
-Welcome to your system!
-```
+*HyprGreetr displaying system information with a custom logo and color scheme*
 
 ## Development
 
