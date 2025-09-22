@@ -33,8 +33,8 @@ border_color = "#89dceb"
 [display.image_size]
 width = 30
 height = 14
-cell_width = 17   # Pixel pro Terminal-Zeichen (Breite) - anpassen für perfektes Seitenverhältnis
-cell_height = 24  # Pixel pro Terminal-Zeichen (Höhe) - anpassen für perfektes Seitenverhältnis
+cell_width = 17   # Pixels per terminal character (width) - adjust for perfect aspect ratio
+cell_height = 24  # Pixels per terminal character (height) - adjust for perfect aspect ratio
 
 [display.block_rendering]                      # use this if kitty_graphics is false
 block_style = "default"                        # Block character style: "default", "ascii", "braille", "custom"
