@@ -50,6 +50,16 @@ cargo build --release
 cargo install --path .
 ```
 
+## don't forget to add rust path to your shell
+fish: 
+fish_add_path ~/.cargo/bin
+
+bash:
+echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.bashrc
+
+zsh:
+echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.zshrc
+
 ## Usage
 
 ```bash
